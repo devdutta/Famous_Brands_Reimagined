@@ -8,14 +8,30 @@ This repository contains a complete n8n workflow that automatically generates cr
 
 ## Table of Contents
 
-1. [Use Cases](#use-cases)
-2. [Architecture Overview](#architecture-overview)
-3. [Setup Guide](#setup-guide)
-4. [Workflow Explanation](#workflow-explanation)
-5. [Node Reference](#node-reference)
-6. [The Prompt Generator - Deep Dive](#the-prompt-generator---deep-dive)
-7. [Estimated Costs](#estimated-costs)
-8. [Getting Started](#getting-started)
+1. [Example Output](#example-output)
+2. [Use Cases](#use-cases)
+3. [Architecture Overview](#architecture-overview)
+4. [Setup Guide](#setup-guide)
+5. [Workflow Explanation](#workflow-explanation)
+6. [Node Reference](#node-reference)
+7. [The Prompt Generator - Deep Dive](#the-prompt-generator---deep-dive)
+8. [Estimated Costs](#estimated-costs)
+9. [Extending the Workflow](#extending-the-workflow)
+10. [Getting Started](#getting-started)
+
+---
+
+## Example Output
+
+See what this workflow produces before diving into the details.
+
+### Fast Food Chains - Sample Video
+
+**Brands Featured:** Haldiram, Wow Momo, Barbeque Nation, Subway
+
+[![Watch Sample Video](https://img.shields.io/badge/▶_Watch_Sample_Video-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://f002.backblazeb2.com/file/creatomate-c8xg3hsxdu/59de5667-910e-4105-8956-67b1e9754470.mp4)
+
+**[Download Video (MP4)](https://f002.backblazeb2.com/file/creatomate-c8xg3hsxdu/59de5667-910e-4105-8956-67b1e9754470.mp4)** | **[View More Examples](./examples/)**
 
 ---
 
@@ -674,6 +690,110 @@ Change audio to "calm, focused study music"
 2. **Reduce video length** to 3 seconds if acceptable
 3. **Batch process** during off-peak hours
 4. **Cache common prompts** for repeated brand categories
+
+---
+
+## Extending the Workflow
+
+This workflow is designed to be **modular and extensible**. One of the most powerful extensions is **automatic social media publishing**.
+
+### Auto-Publish to Social Media Platforms
+
+The workflow can be extended to automatically upload the final video from Creatomate directly to multiple social media platforms:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        SOCIAL MEDIA DISTRIBUTION EXTENSION                       │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+                    ┌─────────────────┐
+                    │  Final Video    │
+                    │  from Creatomate│
+                    └────────┬────────┘
+                             │
+              ┌──────────────┼──────────────┐
+              │              │              │
+              ▼              ▼              ▼
+        ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
+        │ YouTube  │  │  TikTok  │  │Instagram │  │ Facebook │
+        │  Shorts  │  │          │  │  Reels   │  │  Reels   │
+        └──────────┘  └──────────┘  └──────────┘  └──────────┘
+```
+
+### Supported Platforms & n8n Nodes
+
+| Platform | n8n Node | API Documentation |
+|----------|----------|-------------------|
+| **YouTube** | [YouTube Node](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.youtube/) | Upload as Shorts (9:16 format ready) |
+| **TikTok** | HTTP Request + [TikTok API](https://developers.tiktok.com/doc/content-posting-api-get-started) | Direct video upload via Content Posting API |
+| **Instagram** | HTTP Request + [Instagram Graph API](https://developers.facebook.com/docs/instagram-api/guides/content-publishing/) | Reels publishing via Facebook Graph API |
+| **Facebook** | [Facebook Graph API Node](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.facebookGraphApi/) | Reels and video posts |
+
+### Implementation Pattern
+
+To add social media publishing, extend the workflow after the "Update Sheet" node:
+
+```
+Update Sheet
+     │
+     ▼
+┌─────────────┐
+│  Download   │ ◄── Download video from Creatomate URL
+│  Video File │
+└─────────────┘
+     │
+     ▼
+┌─────────────┐
+│  Parallel   │ ◄── Split to upload to multiple platforms simultaneously
+│  Upload     │
+└─────────────┘
+     │
+     ├──► YouTube Upload Node (with title, description, tags)
+     ├──► TikTok HTTP Request (with caption, hashtags)
+     ├──► Instagram Graph API (with caption, location)
+     └──► Facebook Graph API (with message, targeting)
+```
+
+### Example: YouTube Shorts Upload Node
+
+```json
+{
+  "parameters": {
+    "resource": "video",
+    "operation": "upload",
+    "title": "={{ $('Fetch Data').item.json.Category }} Reimagined #shorts",
+    "description": "Famous brands transformed into miniature worlds",
+    "categoryId": "22",
+    "privacyStatus": "public"
+  },
+  "type": "n8n-nodes-base.youTube",
+  "typeVersion": 1
+}
+```
+
+### Benefits of Auto-Publishing
+
+| Benefit | Description |
+|---------|-------------|
+| **Time Savings** | No manual download → upload → caption workflow |
+| **Consistency** | Same video published everywhere with platform-optimized captions |
+| **Scheduling** | Combine with Schedule Trigger for automated content calendar |
+| **Analytics** | Track which platform performs best for your brand content |
+| **Scale** | Publish dozens of videos per week without manual effort |
+
+### Considerations
+
+- **API Rate Limits** - Each platform has daily upload limits
+- **Content Policies** - Ensure AI-generated content complies with platform ToS
+- **Captions/Hashtags** - Add platform-specific nodes to generate optimized captions
+- **Thumbnail Generation** - YouTube requires custom thumbnails for best performance
+
+### Additional Resources
+
+- [n8n YouTube Integration Guide](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.youtube/)
+- [TikTok Content Posting API](https://developers.tiktok.com/doc/content-posting-api-get-started)
+- [Instagram Reels Publishing](https://developers.facebook.com/docs/instagram-api/guides/content-publishing/)
+- [Facebook Video API](https://developers.facebook.com/docs/video-api/guides/publishing)
 
 ---
 
